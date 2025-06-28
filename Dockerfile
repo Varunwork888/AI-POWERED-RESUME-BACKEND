@@ -1,8 +1,20 @@
-# Use a base Java image
-FROM openjdk:17-jdk-slim
+# Use Maven to build the project
+FROM maven:3.9.6-eclipse-temurin-17 AS builder
 
-# Copy your JAR file into the image
-COPY target/*.jar app.jar
+# Set working directory
+WORKDIR /app
 
-# Set the command to run the jar
+# Copy source code to build stage
+COPY . .
+
+# Build the JAR inside the container
+RUN mvn clean package -DskipTests
+
+# --- Stage 2: Create lightweight image to run the app ---
+FROM eclipse-temurin:17-jdk-jammy
+
+# Copy only the JAR from the builder image
+COPY --from=builder /app/target/*.jar app.jar
+
+# Run the Spring Boot app
 ENTRYPOINT ["java", "-jar", "/app.jar"]
